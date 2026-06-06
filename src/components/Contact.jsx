@@ -16,7 +16,7 @@ const Contact = () => {
             <h3 className="text-base font-bold text-gray-800 mb-2">📍 Address</h3>
             <div className="text-gray-600 text-xs space-y-0.5">
               <p>Selvaraj Chicken Center,</p>
-              <p>Karkonam, Near Bus Stop,</p>
+              <p>sedhuvalai,kovur</p>
               <p>Tiruvannamalai Dist - 606701</p>
             </div>
             
@@ -46,7 +46,7 @@ const Contact = () => {
         </div>
         
         <div className="mt-5 bg-orange-50 rounded-lg p-3 text-center">
-          <p className="text-gray-700 text-xs font-medium">📍 Selvaraj Chicken Center - Karkonam</p>
+          <p className="text-gray-700 text-xs font-medium">📍 Selvaraj Chicken Center - sedhuvalai,kovur</p>
           <a href={mapLocation} target="_blank" className="inline-flex items-center gap-1 bg-orange-600 text-white px-3 py-1 rounded-lg text-[11px] font-semibold mt-2 hover:bg-orange-700">
             🗺️ Open in Google Maps →
           </a>

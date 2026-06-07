@@ -38,19 +38,23 @@ function App() {
       <Navbar cartItemCount={cartItems.length} />
       <Hero />
       <MenuSection addToCart={addToCart} />
+      
+      {/* Cart Section */}
       <Cart 
         cartItems={cartItems} 
         onRemove={removeFromCart}
         onUpdateQuantity={updateQuantity}
         total={calculateTotal()} 
       />
-      {/* Payment Section with ID for auto-scroll */}
+      
+      {/* Payment Section with ID for auto-scroll from MenuSection */}
       <div id="payment">
         <Payment 
           total={calculateTotal()} 
           cartItems={cartItems}
         />
       </div>
+      
       <Contact />
       <Footer />
       <FloatingButtons />

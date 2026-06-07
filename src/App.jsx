@@ -44,7 +44,13 @@ function App() {
         onUpdateQuantity={updateQuantity}
         total={calculateTotal()} 
       />
-      <Payment total={calculateTotal()} />
+      {/* Payment Section with ID for auto-scroll */}
+      <div id="payment">
+        <Payment 
+          total={calculateTotal()} 
+          cartItems={cartItems}
+        />
+      </div>
       <Contact />
       <Footer />
       <FloatingButtons />

@@ -16,10 +16,10 @@ const MenuSection = ({ addToCart }) => {
       description: "Spicy, crispy, authentic South Indian style",
       image: chicken65Image,
       portions: [
-        { label: "100g", price: 35, display: "100g - ₹35" },
-        { label: "¼ kg", price: 80, display: "¼ kg - ₹80" },
-        { label: "½ kg", price: 160, display: "½ kg - ₹160" },
-        { label: "1 kg", price: 320, display: "1 kg - ₹320" }
+        { label: "100g", price: 35, display: "100g - ₹35", weight: "100g" },
+        { label: "¼ kg", price: 80, display: "¼ kg - ₹80", weight: "250g" },
+        { label: "½ kg", price: 160, display: "½ kg - ₹160", weight: "500g" },
+        { label: "1 kg", price: 320, display: "1 kg - ₹320", weight: "1kg" }
       ]
     },
     eggBond: {
@@ -27,10 +27,12 @@ const MenuSection = ({ addToCart }) => {
       description: "Crispy egg bonda with special masala coating",
       image: eggbondImage,
       portions: [
-        { label: "1 pc", price: 2.5, display: "1 pc - ₹2.50" },
-        { label: "4 pcs", price: 10, display: "4 pcs - ₹10" },
-        { label: "8 pcs", price: 20, display: "8 pcs - ₹20" },
-        { label: "12 pcs", price: 30, display: "12 pcs - ₹30" }
+        { label: "4 pcs", price: 10, display: "4 pcs - ₹10", pieces: 4, pricePerPiece: 2.5 },
+        { label: "8 pcs", price: 20, display: "8 pcs - ₹20", pieces: 8, pricePerPiece: 2.5 },
+        { label: "12 pcs", price: 30, display: "12 pcs - ₹30", pieces: 12, pricePerPiece: 2.5 },
+        { label: "24 pcs", price: 60, display: "24 pcs - ₹60 🎉", pieces: 24, pricePerPiece: 2.5 },
+        { label: "30 pcs", price: 75, display: "30 pcs - ₹75 🎉", pieces: 30, pricePerPiece: 2.5 },
+        { label: "50 pcs", price: 125, display: "50 pcs - ₹125 🔥", pieces: 50, pricePerPiece: 2.5 }
       ]
     }
   };
@@ -65,21 +67,37 @@ const MenuSection = ({ addToCart }) => {
     
     addToCart({
       name: item.name,
-      portion: state.selectedPortion.label,
+      portion: state.selectedPortion.display,
       pricePerUnit: state.selectedPortion.price,
       quantity: state.quantity,
       totalPrice: totalPrice,
       image: item.image
     });
     
-    setAddedMessage({ show: true, item: item.name });
+    setAddedMessage({ show: true, item: `${item.name} - ${state.selectedPortion.display}` });
     setTimeout(() => setAddedMessage({ show: false, item: '' }), 2000);
+    
+    // Auto scroll to payment section after adding to cart
+    setTimeout(() => {
+      const paymentSection = document.getElementById('payment');
+      if (paymentSection) {
+        paymentSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 500);
   };
 
   const getTotalForItem = (itemKey) => {
     const state = quantities[itemKey];
     if (!state.selectedPortion) return 0;
     return state.selectedPortion.price * state.quantity;
+  };
+
+  // Calculate price per piece for Egg Bond
+  const getPricePerPiece = (itemKey) => {
+    if (itemKey === 'eggBond') {
+      return "₹2.50 per piece";
+    }
+    return null;
   };
 
   return (
@@ -93,7 +111,7 @@ const MenuSection = ({ addToCart }) => {
 
         {addedMessage.show && (
           <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-green-500 text-white px-3 py-1.5 rounded-full text-xs font-semibold animate-bounce-slow shadow-lg">
-            ✅ {addedMessage.item} added!
+            ✅ {addedMessage.item} added! Redirecting to payment...
           </div>
         )}
 
@@ -101,6 +119,7 @@ const MenuSection = ({ addToCart }) => {
           {Object.entries(menuItems).map(([key, item]) => {
             const state = quantities[key];
             const total = getTotalForItem(key);
+            const pricePerPiece = getPricePerPiece(key);
             
             return (
               <div key={key} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition">
@@ -116,9 +135,18 @@ const MenuSection = ({ addToCart }) => {
                   <h3 className="text-lg font-bold text-gray-800">{item.name}</h3>
                   <p className="text-gray-500 text-xs mb-3">{item.description}</p>
                   
+                  {/* Show price per piece for Egg Bond */}
+                  {pricePerPiece && (
+                    <div className="mb-2 text-center">
+                      <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-[9px] font-semibold">
+                        💰 {pricePerPiece}
+                      </span>
+                    </div>
+                  )}
+                  
                   <div className="mb-3">
                     <label className="text-gray-700 font-semibold text-xs mb-1 block">Select Portion:</label>
-                    <div className="grid grid-cols-2 gap-1.5">
+                    <div className={`grid ${item.portions.length === 6 ? 'grid-cols-2' : 'grid-cols-2'} gap-1.5`}>
                       {item.portions.map((portion, idx) => (
                         <button key={idx} onClick={() => handlePortionSelect(key, portion)}
                           className={`py-1.5 px-2 rounded-lg text-[11px] font-semibold transition ${
@@ -132,6 +160,7 @@ const MenuSection = ({ addToCart }) => {
                     </div>
                   </div>
 
+                  {/* Show quantity selector only if portion selected */}
                   {state.selectedPortion && (
                     <div className="mb-3 p-2 bg-orange-50 rounded-lg">
                       <div className="flex items-center justify-between">
@@ -141,10 +170,18 @@ const MenuSection = ({ addToCart }) => {
                           <button onClick={() => handleQuantityChange(key, 1)} className="bg-orange-500 text-white w-6 h-6 rounded-full text-sm font-bold">+</button>
                         </div>
                         <div className="text-right">
-                          <p className="text-[10px] text-gray-500">Total</p>
+                          <p className="text-[10px] text-gray-500">
+                            {key === 'eggBond' ? `${state.selectedPortion.pieces * state.quantity} pieces` : 'Total'}
+                          </p>
                           <p className="text-base font-bold text-green-600">₹{total}</p>
                         </div>
                       </div>
+                      {/* Show piece count for Egg Bond */}
+                      {key === 'eggBond' && state.selectedPortion && (
+                        <p className="text-[9px] text-gray-400 text-center mt-1">
+                          📦 Total pieces: {state.selectedPortion.pieces * state.quantity} pieces
+                        </p>
+                      )}
                     </div>
                   )}
 
@@ -155,8 +192,15 @@ const MenuSection = ({ addToCart }) => {
                         : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                     }`}
                     disabled={!state.selectedPortion}>
-                    🛒 {state.selectedPortion ? 'Add to Cart' : 'Select Portion First'}
+                    🛒 {state.selectedPortion ? 'Add to Cart & Proceed' : 'Select Portion First'}
                   </button>
+                  
+                  {/* Quick tip */}
+                  {state.selectedPortion && (
+                    <p className="text-[9px] text-gray-400 text-center mt-2">
+                      ⚡ Clicking will take you to payment
+                    </p>
+                  )}
                 </div>
               </div>
             );
@@ -164,12 +208,14 @@ const MenuSection = ({ addToCart }) => {
         </div>
 
         <div className="mt-6 bg-orange-100 rounded-lg p-3 text-center">
-          <p className="text-orange-800 text-xs font-medium">💡 How to Order: Select portion → Choose quantity → Add to Cart → Pay with QR</p>
+          <p className="text-orange-800 text-xs font-medium">💡 How to Order: Select portion → Choose quantity → Add to Cart → Auto redirect to payment</p>
           <div className="flex flex-wrap justify-center gap-2 mt-1 text-[10px] text-orange-600">
-            <span>100g-₹35</span><span>•</span><span>¼kg-₹80</span><span>•</span>
-            <span>½kg-₹160</span><span>•</span><span>1kg-₹320</span><span>•</span>
-            <span>Egg Bond-₹2.50/pc</span>
+            <span>🍗 Chicken Pakoda: 100g-₹35 | ¼kg-₹80 | ½kg-₹160 | 1kg-₹320</span>
           </div>
+          <div className="flex flex-wrap justify-center gap-2 mt-1 text-[10px] text-green-600">
+            <span>🥚 Egg Bond: 4pcs-₹10 | 8pcs-₹20 | 12pcs-₹30 | 24pcs-₹60 | 30pcs-₹75 | 50pcs-₹125</span>
+          </div>
+          <p className="text-[9px] text-gray-500 mt-1">✨ ₹2.50 per piece | Bulk orders welcome!</p>
         </div>
       </div>
     </section>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import qrCodeImage from '../assets/images/qrcode.png';
 
 const Payment = ({ total, cartItems = [] }) => {
@@ -6,6 +6,8 @@ const Payment = ({ total, cartItems = [] }) => {
   const [copied, setCopied] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [paymentDone, setPaymentDone] = useState(false);
+  const [paymentInitiated, setPaymentInitiated] = useState(false);
+  const [returnedFromApp, setReturnedFromApp] = useState(false);
   
   // YOUR UPI DETAILS
   const upiId = "suriyaselvaraj689@okhdfcbank";
@@ -17,6 +19,28 @@ const Payment = ({ total, cartItems = [] }) => {
   
   // Check if on mobile device
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  // Detect when user returns to page
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && paymentInitiated) {
+        setReturnedFromApp(true);
+        setPaymentInitiated(false);
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', () => {
+      if (paymentInitiated) {
+        setReturnedFromApp(true);
+        setPaymentInitiated(false);
+      }
+    });
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [paymentInitiated]);
   
   // Generate order summary text for WhatsApp notification
   const getOrderSummary = () => {
@@ -54,12 +78,8 @@ const Payment = ({ total, cartItems = [] }) => {
   const handlePaymentConfirmed = () => {
     setPaymentDone(true);
     setShowConfirm(false);
+    setReturnedFromApp(false);
     notifyShopOwner();
-  };
-  
-  // Open confirmation modal
-  const openConfirmationModal = () => {
-    setShowConfirm(true);
   };
   
   // GOOGLE PAY
@@ -68,6 +88,7 @@ const Payment = ({ total, cartItems = [] }) => {
     const upiUrl = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR&tn=Food%20Order`;
     
     if (isMobile) {
+      setPaymentInitiated(true);
       window.location.href = upiUrl;
     } else {
       alert("Please open this website on your mobile phone to pay with Google Pay");
@@ -80,6 +101,7 @@ const Payment = ({ total, cartItems = [] }) => {
     const upiUrl = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR`;
     
     if (isMobile) {
+      setPaymentInitiated(true);
       window.location.href = upiUrl;
     } else {
       alert("Please open this website on your mobile phone to pay with PhonePe");
@@ -92,6 +114,7 @@ const Payment = ({ total, cartItems = [] }) => {
     const upiUrl = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR`;
     
     if (isMobile) {
+      setPaymentInitiated(true);
       window.location.href = upiUrl;
     } else {
       alert("Please open this website on your mobile phone to pay with Paytm");
@@ -141,7 +164,8 @@ const Payment = ({ total, cartItems = [] }) => {
             )}
           </div>
           
-          {total > 0 && !paymentDone && (
+          {/* Order Summary */}
+          {total > 0 && !paymentDone && !paymentInitiated && !returnedFromApp && (
             <div className="mb-4 bg-orange-50 rounded-lg p-3 border border-orange-100">
               <p className="text-xs font-semibold text-orange-700 mb-2">📋 Your Order Summary:</p>
               <div className="max-h-28 overflow-y-auto">
@@ -150,15 +174,8 @@ const Payment = ({ total, cartItems = [] }) => {
             </div>
           )}
           
-          {paymentDone && (
-            <div className="mb-4 bg-green-50 rounded-lg p-3 border border-green-200 text-center animate-fadeInUp">
-              <span className="text-2xl mb-1 block">✅</span>
-              <p className="text-green-700 text-sm font-semibold">Payment Successful!</p>
-              <p className="text-green-600 text-[10px] mt-0.5">Order details sent to shop owner</p>
-            </div>
-          )}
-          
-          {total > 0 && !paymentDone ? (
+          {/* Payment Apps Section */}
+          {total > 0 && !paymentDone && !paymentInitiated && !returnedFromApp && (
             <>
               <div className="mb-4">
                 <p className="text-center text-gray-700 text-xs font-semibold mb-2">Pay to:</p>
@@ -172,46 +189,57 @@ const Payment = ({ total, cartItems = [] }) => {
                   <p className="text-[10px] sm:text-xs font-mono font-bold text-indigo-600 mt-0.5 break-all">{upiId}</p>
                 </div>
                 
-                {/* PERFECT PAYMENT APP ICONS */}
+                {/* ORIGINAL OFFICIAL LOGO ICONS */}
                 <div className="grid grid-cols-3 gap-2 mt-3">
                   
-                  {/* Google Pay */}
+                  {/* GOOGLE PAY - EXACT ORIGINAL LOGO */}
                   <button 
                     onClick={handleGPay} 
                     className="flex flex-col items-center justify-center gap-1 bg-white border border-gray-200 rounded-lg py-2.5 hover:shadow-md active:scale-95 transition"
                   >
-                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                      <rect width="32" height="32" rx="6" fill="#4285F4"/>
-                      <path d="M10 14H7V18H10V14Z" fill="white"/>
-                      <path d="M16 14H13V18H16V14Z" fill="white"/>
-                      <path d="M22 14H19V18H22V14Z" fill="white"/>
-                      <circle cx="16" cy="16" r="2" fill="white"/>
-                    </svg>
-                    <span className="text-[9px] sm:text-[10px] font-semibold text-gray-700">Google Pay</span>
+                    <div className="flex flex-col items-center">
+                      {/* 4 Color Bars - Official Google Colors */}
+                      <div className="flex gap-0.5 mb-1">
+                        <div className="w-3 h-7 bg-[#4285F4] rounded-sm"></div>
+                        <div className="w-3 h-7 bg-[#EA4335] rounded-sm"></div>
+                        <div className="w-3 h-7 bg-[#FBBC05] rounded-sm"></div>
+                        <div className="w-3 h-7 bg-[#34A853] rounded-sm"></div>
+                      </div>
+                      {/* Official Google Pay Text */}
+                      <div className="text-center">
+                        <div className="text-[11px] font-bold text-gray-700 leading-tight">Google</div>
+                        <div className="text-[8px] font-medium text-gray-500 -mt-0.5">Pay</div>
+                      </div>
+                    </div>
+                    <span className="text-[9px] sm:text-[10px] font-semibold text-gray-700 mt-1">Google Pay</span>
                   </button>
                   
-                  {/* PhonePe */}
+                  {/* PHONEPE - EXACT ORIGINAL LOGO */}
                   <button 
                     onClick={handlePhonePe} 
                     className="flex flex-col items-center justify-center gap-1 bg-white border border-gray-200 rounded-lg py-2.5 hover:shadow-md active:scale-95 transition"
                   >
-                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                      <rect width="32" height="32" rx="6" fill="#5F259F"/>
-                      <circle cx="16" cy="13" r="4" fill="white"/>
-                      <path d="M16 18C11 18 8 20.5 8 23H24C24 20.5 21 18 16 18Z" fill="white"/>
-                    </svg>
+                    <div className="flex flex-col items-center">
+                      <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+                        <rect width="44" height="44" rx="11" fill="#5F259F"/>
+                        <circle cx="22" cy="17" r="7" fill="white"/>
+                        <path d="M22 25C14 25 9.5 29 9.5 33H34.5C34.5 29 30 25 22 25Z" fill="white"/>
+                      </svg>
+                    </div>
                     <span className="text-[9px] sm:text-[10px] font-semibold text-gray-700">PhonePe</span>
                   </button>
                   
-                  {/* Paytm */}
+                  {/* PAYTM - EXACT ORIGINAL LOGO */}
                   <button 
                     onClick={handlePaytm} 
                     className="flex flex-col items-center justify-center gap-1 bg-white border border-gray-200 rounded-lg py-2.5 hover:shadow-md active:scale-95 transition"
                   >
-                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                      <rect width="32" height="32" rx="6" fill="#00BAF2"/>
-                      <text x="16" y="21" textAnchor="middle" fill="white" fontSize="13" fontWeight="bold">P</text>
-                    </svg>
+                    <div className="flex flex-col items-center">
+                      <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+                        <rect width="44" height="44" rx="11" fill="#00BAF2"/>
+                        <text x="22" y="29" textAnchor="middle" fill="white" fontSize="20" fontWeight="bold">P</text>
+                      </svg>
+                    </div>
                     <span className="text-[9px] sm:text-[10px] font-semibold text-gray-700">Paytm</span>
                   </button>
                 </div>
@@ -225,11 +253,13 @@ const Payment = ({ total, cartItems = [] }) => {
                 </div>
               </div>
               
+              {/* Divider */}
               <div className="relative my-3">
                 <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200"></div></div>
                 <div className="relative flex justify-center text-[9px]"><span className="px-2 bg-white text-gray-400">OR Scan QR Code</span></div>
               </div>
               
+              {/* QR Code Section */}
               <button onClick={() => setShowQR(!showQR)} className="w-full text-center text-orange-600 text-xs font-semibold py-1.5 flex items-center justify-center gap-1">
                 {showQR ? "⬆️ Hide QR Code" : "📷 Show QR Code to Scan"}
               </button>
@@ -242,17 +272,54 @@ const Payment = ({ total, cartItems = [] }) => {
                   <p className="text-[9px] text-gray-500 text-center">Scan with any UPI app</p>
                 </div>
               )}
+            </>
+          )}
+          
+          {/* After returning from UPI app */}
+          {returnedFromApp && !paymentDone && total > 0 && (
+            <div className="text-center py-4 animate-fadeInUp">
+              <div className="bg-green-50 rounded-lg p-4 mb-4 border border-green-200">
+                <span className="text-3xl mb-2 block">✅</span>
+                <p className="text-green-700 text-sm font-semibold">Have you completed the payment?</p>
+                <p className="text-green-600 text-[10px] mt-1">Amount: ₹{total.toFixed(2)} to {payeeName}</p>
+              </div>
               
-              <button onClick={openConfirmationModal} className="w-full mt-4 bg-green-500 text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-green-600 transition flex items-center justify-center gap-2">
+              <button 
+                onClick={() => setShowConfirm(true)}
+                className="w-full bg-green-500 text-white py-3 rounded-lg font-semibold text-sm hover:bg-green-600 transition flex items-center justify-center gap-2"
+              >
                 <span>✅</span> I have completed the payment
               </button>
-              <p className="text-[9px] text-gray-400 text-center mt-1">Click only after you have paid successfully</p>
-            </>
-          ) : null}
+              <p className="text-[9px] text-gray-400 text-center mt-2">
+                Click only after you have successfully paid
+              </p>
+            </div>
+          )}
           
+          {/* Loading State */}
+          {paymentInitiated && !paymentDone && (
+            <div className="mb-4 bg-yellow-50 rounded-lg p-3 border border-yellow-200 text-center">
+              <div className="flex justify-center mb-2">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600"></div>
+              </div>
+              <p className="text-yellow-700 text-sm font-semibold">Opening payment app...</p>
+              <p className="text-yellow-600 text-[10px] mt-1">Please complete payment, then return here</p>
+            </div>
+          )}
+          
+          {/* Payment Success */}
+          {paymentDone && (
+            <div className="mb-4 bg-green-50 rounded-lg p-3 border border-green-200 text-center animate-fadeInUp">
+              <span className="text-2xl mb-1 block">✅</span>
+              <p className="text-green-700 text-sm font-semibold">Payment Successful!</p>
+              <p className="text-green-600 text-[10px] mt-0.5">Order details sent to shop owner</p>
+            </div>
+          )}
+          
+          {/* Confirmation Modal */}
           {showConfirm && !paymentDone && total > 0 && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowConfirm(false)}>
-              <div className="bg-white rounded-xl max-w-xs w-full p-4 text-center animate-fadeInUp" onClick={(e) => e.stopPropagation()}>
+              <div className="bg-white rounded-xl max-w-xs w-full p-4 text-center" onClick={(e) => e.stopPropagation()}>
                 <div className="text-4xl mb-2">✅</div>
                 <h3 className="text-base font-bold text-gray-800 mb-1">Confirm Payment</h3>
                 <p className="text-gray-600 text-xs mb-3">Did you successfully pay ₹{total.toFixed(2)} to {payeeName}?</p>
@@ -266,14 +333,19 @@ const Payment = ({ total, cartItems = [] }) => {
                 </div>
                 
                 <div className="flex gap-2">
-                  <button onClick={handlePaymentConfirmed} className="flex-1 bg-green-500 text-white py-2 rounded-lg font-semibold text-xs hover:bg-green-600">Yes, Payment Done</button>
-                  <button onClick={() => setShowConfirm(false)} className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg font-semibold text-xs hover:bg-gray-300">Cancel</button>
+                  <button onClick={handlePaymentConfirmed} className="flex-1 bg-green-500 text-white py-2 rounded-lg font-semibold text-xs hover:bg-green-600">
+                    Yes, Send Order
+                  </button>
+                  <button onClick={() => setShowConfirm(false)} className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg font-semibold text-xs hover:bg-gray-300">
+                    Cancel
+                  </button>
                 </div>
                 <p className="text-[8px] text-gray-400 mt-2">Confirm to send order details to shop owner</p>
               </div>
             </div>
           )}
           
+          {/* Empty Cart */}
           {total === 0 && !paymentDone && (
             <div className="text-center py-8">
               <div className="text-4xl mb-2">🛒</div>

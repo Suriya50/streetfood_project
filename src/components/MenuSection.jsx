@@ -68,21 +68,37 @@ const MenuSection = ({ addToCart }) => {
     addToCart({
       name: item.name,
       portion: state.selectedPortion.display,
+      portionKey: state.selectedPortion.label,
       pricePerUnit: state.selectedPortion.price,
       quantity: state.quantity,
       totalPrice: totalPrice,
-      image: item.image
+      image: item.image,
+      pieces: state.selectedPortion.pieces
     });
     
     setAddedMessage({ show: true, item: `${item.name} - ${state.selectedPortion.display}` });
-    setTimeout(() => setAddedMessage({ show: false, item: '' }), 2000);
     
+    // CRITICAL FIX: Scroll to payment after adding to cart
     setTimeout(() => {
       const paymentSection = document.getElementById('payment');
       if (paymentSection) {
-        paymentSection.scrollIntoView({ behavior: 'smooth' });
+        paymentSection.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start',
+          inline: 'nearest'
+        });
+      } else {
+        console.log('Payment section not found, checking alternative selectors...');
+        const paymentElement = document.querySelector('#payment, .payment-section, [data-payment]');
+        if (paymentElement) {
+          paymentElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
       }
-    }, 500);
+    }, 300);
+    
+    setTimeout(() => {
+      setAddedMessage({ show: false, item: '' });
+    }, 2500);
   };
 
   const getTotalForItem = (itemKey) => {
@@ -108,8 +124,8 @@ const MenuSection = ({ addToCart }) => {
         </div>
 
         {addedMessage.show && (
-          <div className="fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-50 bg-green-500 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-semibold animate-bounce-slow shadow-lg whitespace-nowrap">
-            ✅ {addedMessage.item} added! Redirecting...
+          <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-green-500 text-white px-4 py-2 rounded-full text-xs sm:text-sm font-semibold animate-bounce shadow-lg whitespace-nowrap">
+            ✅ {addedMessage.item} added! Taking you to payment...
           </div>
         )}
 
@@ -202,12 +218,12 @@ const MenuSection = ({ addToCart }) => {
                     }`}
                     disabled={!state.selectedPortion}
                   >
-                    🛒 {state.selectedPortion ? 'Add to Cart & Proceed' : 'Select Portion First'}
+                    🛒 {state.selectedPortion ? 'Add to Cart & Proceed to Payment' : 'Select Portion First'}
                   </button>
                   
                   {state.selectedPortion && (
-                    <p className="text-[8px] sm:text-[9px] text-gray-400 text-center mt-2">
-                      ⚡ Clicking will take you to payment
+                    <p className="text-[8px] sm:text-[9px] text-green-600 text-center mt-2 font-semibold">
+                      ⚡ Click to add & go to payment
                     </p>
                   )}
                 </div>

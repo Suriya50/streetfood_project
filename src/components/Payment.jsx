@@ -10,13 +10,14 @@ const Payment = ({ total, cartItems = [], clearCart }) => {
   const [returnedFromApp, setReturnedFromApp] = useState(false);
   const [customerNumber, setCustomerNumber] = useState('');
   const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [orderSent, setOrderSent] = useState(false);
   
-  // YOUR UPI DETAILS
+  // YOUR UPI DETAILS - Make sure this is correct
   const upiId = "suriyaselvaraj689@okhdfcbank";
   const payeeName = "Suriya Selvaraj";
-  const mobileNumber = "7868943703";
+  const payeeNote = "Selvaraj Chicken Center Order";
   
-  // Shop owner WhatsApp number
+  // Shop owner WhatsApp number (with country code)
   const ownerWhatsApp = "917868943703";
   
   // Check if on mobile device
@@ -44,8 +45,18 @@ const Payment = ({ total, cartItems = [], clearCart }) => {
     };
   }, [paymentInitiated]);
   
-  // Generate order summary for WhatsApp
-  const getOrderSummary = () => {
+  // Format cart items for display
+  const formatCartItemsText = () => {
+    let text = "";
+    cartItems.forEach((item, index) => {
+      text += `${index + 1}. ${item.name}\n`;
+      text += `   📦 ${item.portion} × ${item.quantity} = ₹${item.totalPrice}\n`;
+    });
+    return text;
+  };
+  
+  // Generate order summary for WhatsApp to SHOP OWNER
+  const getOrderSummaryForOwner = () => {
     let summary = "🍗 *NEW ORDER RECEIVED!* 🍗\n\n";
     summary += "*Selvaraj Chicken Center*\n";
     summary += "━━━━━━━━━━━━━━━━━━━━\n\n";
@@ -60,9 +71,10 @@ const Payment = ({ total, cartItems = [], clearCart }) => {
     summary += `💰 *Total Amount:* ₹${total.toFixed(2)}\n`;
     summary += "━━━━━━━━━━━━━━━━━━━━\n\n";
     summary += "✅ *Payment Status:* Successfully Paid via UPI\n";
-    summary += `💳 *UPI ID Used:* ${upiId}\n`;
-    summary += `👤 *Customer Name:* ${customerNumber || 'Walk-in Customer'}\n`;
+    summary += `💳 *UPI ID:* ${upiId}\n`;
+    summary += `👤 *Customer:* ${customerNumber || 'Walk-in Customer'}\n`;
     summary += `📞 *Customer Contact:* ${customerNumber || 'Not provided'}\n\n`;
+    summary += "⏰ *Order Time:* " + new Date().toLocaleString() + "\n\n";
     summary += "📞 Please prepare the order soon!\n\n";
     summary += "📍 *Shop Address:*\n";
     summary += "Selvaraj Chicken Center\n";
@@ -73,39 +85,52 @@ const Payment = ({ total, cartItems = [], clearCart }) => {
     return encodeURIComponent(summary);
   };
   
-  // Generate customer confirmation message
+  // Generate confirmation message for CUSTOMER
   const getCustomerConfirmation = (phoneNumber) => {
-    let message = "🍗 *ORDER CONFIRMED!* 🍗\n\n";
-    message += "Thank you for ordering from *Selvaraj Chicken Center*!\n\n";
-    message += "*Your Order:*\n";
+    let message = "🍗 *ORDER CONFIRMATION - Selvaraj Chicken Center* 🍗\n\n";
+    message += "Dear Customer,\n\n";
+    message += "*Your Order Details:*\n";
+    message += "━━━━━━━━━━━━━━━━━━━━\n";
     
     cartItems.forEach((item) => {
-      message += `✓ ${item.name} - ${item.portion} × ${item.quantity} = ₹${item.totalPrice}\n`;
+      message += `✓ ${item.name}\n`;
+      message += `   ${item.portion} × ${item.quantity} = ₹${item.totalPrice}\n`;
     });
     
-    message += `\n💰 *Total Paid:* ₹${total.toFixed(2)}\n\n`;
+    message += "━━━━━━━━━━━━━━━━━━━━\n";
+    message += `💰 *Total Paid:* ₹${total.toFixed(2)}\n\n`;
+    message += "✅ *Payment Status:* Successfully Completed\n";
+    message += `💳 *Payment Method:* UPI (${upiId})\n\n`;
     message += "⏰ *Estimated Ready Time:* 20-30 minutes\n\n";
     message += "📍 *Pickup Address:*\n";
     message += "Selvaraj Chicken Center\n";
-    message += "Karkonam, Near Bus Stop\n\n";
-    message += "📞 For any queries: +91 78689 43703\n\n";
+    message += "Karkonam, Near Bus Stop\n";
+    message += "Tiruvannamalai Dist - 606701\n\n";
+    message += "📞 *Contact for queries:* +91 78689 43703\n\n";
     message += "Thank you for choosing us! 🙏\n";
-    message += "⭐ Please share your feedback!";
+    message += "⭐ Please share your feedback! ⭐";
     
     return encodeURIComponent(message);
   };
   
   // Send WhatsApp notification to shop owner
   const notifyShopOwner = () => {
-    const message = getOrderSummary();
-    window.open(`https://wa.me/${ownerWhatsApp}?text=${message}`, '_blank');
+    const message = getOrderSummaryForOwner();
+    const whatsappUrl = `https://wa.me/${ownerWhatsApp}?text=${message}`;
+    window.open(whatsappUrl, '_blank');
   };
   
   // Send confirmation to customer
   const notifyCustomer = (phoneNumber) => {
     if (phoneNumber && phoneNumber.length >= 10) {
+      // Format phone number (add 91 if not present)
+      let formattedNumber = phoneNumber;
+      if (!phoneNumber.startsWith('91') && phoneNumber.length === 10) {
+        formattedNumber = '91' + phoneNumber;
+      }
       const message = getCustomerConfirmation(phoneNumber);
-      window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
+      const whatsappUrl = `https://wa.me/${formattedNumber}?text=${message}`;
+      window.open(whatsappUrl, '_blank');
     }
   };
   
@@ -116,12 +141,23 @@ const Payment = ({ total, cartItems = [], clearCart }) => {
     setShowCustomerModal(true);
   };
   
-  // After customer provides number
+  // After customer provides number - SEND BOTH MESSAGES
   const handleCustomerSubmit = () => {
     setShowCustomerModal(false);
-    notifyShopOwner();
-    notifyCustomer(customerNumber);
     
+    // Send to shop owner first
+    notifyShopOwner();
+    
+    // Send to customer if number provided
+    if (customerNumber && customerNumber.length >= 10) {
+      setTimeout(() => {
+        notifyCustomer(customerNumber);
+      }, 500);
+    }
+    
+    setOrderSent(true);
+    
+    // Clear cart after order
     if (clearCart) {
       setTimeout(() => {
         clearCart();
@@ -129,10 +165,11 @@ const Payment = ({ total, cartItems = [], clearCart }) => {
     }
   };
   
-  // GOOGLE PAY - Working perfectly (DON'T CHANGE)
+  // GOOGLE PAY - CORRECT UPI INTENT
   const handleGPay = () => {
     const amount = total.toFixed(2);
-    const upiUrl = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR&tn=Selvaraj%20Chicken%20Order%20₹${amount}`;
+    // Correct UPI URL format for Google Pay
+    const upiUrl = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(payeeNote)}`;
     
     if (isMobile) {
       setPaymentInitiated(true);
@@ -142,39 +179,29 @@ const Payment = ({ total, cartItems = [], clearCart }) => {
     }
   };
   
-  // PHONEPE - Fixed with correct intent
+  // PHONEPE - CORRECT UPI INTENT
   const handlePhonePe = () => {
     const amount = total.toFixed(2);
-    // PhonePe specific UPI intent
-    const upiUrl = `phonepe://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR&mode=02`;
+    // PhonePe uses standard UPI intent
+    const upiUrl = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(payeeNote)}`;
     
     if (isMobile) {
       setPaymentInitiated(true);
       window.location.href = upiUrl;
-      // Fallback to standard UPI if PhonePe app not installed
-      setTimeout(() => {
-        const fallbackUrl = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR`;
-        window.location.href = fallbackUrl;
-      }, 1000);
     } else {
       alert("Please open this website on your mobile phone to pay with PhonePe");
     }
   };
   
-  // PAYTM - Fixed with correct intent
+  // PAYTM - CORRECT UPI INTENT
   const handlePaytm = () => {
     const amount = total.toFixed(2);
-    // Paytm specific UPI intent
-    const upiUrl = `paytmmp://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR`;
+    // Paytm uses standard UPI intent
+    const upiUrl = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(payeeNote)}`;
     
     if (isMobile) {
       setPaymentInitiated(true);
       window.location.href = upiUrl;
-      // Fallback to standard UPI if Paytm app not installed
-      setTimeout(() => {
-        const fallbackUrl = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR`;
-        window.location.href = fallbackUrl;
-      }, 1000);
     } else {
       alert("Please open this website on your mobile phone to pay with Paytm");
     }
@@ -182,10 +209,11 @@ const Payment = ({ total, cartItems = [], clearCart }) => {
   
   const copyUPILink = () => {
     const amount = total.toFixed(2);
-    const upiLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR`;
+    const upiLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(payeeNote)}`;
     navigator.clipboard.writeText(upiLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+    alert("UPI link copied! You can paste it in any UPI app to pay");
   };
 
   const formatCartItems = () => {
@@ -206,6 +234,7 @@ const Payment = ({ total, cartItems = [], clearCart }) => {
     setReturnedFromApp(false);
     setPaymentInitiated(false);
     setShowCustomerModal(false);
+    setOrderSent(false);
     setCustomerNumber('');
     if (clearCart) {
       clearCart();
@@ -237,6 +266,7 @@ const Payment = ({ total, cartItems = [], clearCart }) => {
               <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-2 sm:p-3 border border-green-200">
                 <p className="text-gray-600 text-[10px] sm:text-xs">Amount to Pay</p>
                 <p className="text-2xl sm:text-3xl font-bold text-green-600">₹{total.toFixed(2)}</p>
+                <p className="text-[8px] text-gray-500 mt-1">Pay to: {payeeName} ({upiId})</p>
               </div>
             )}
           </div>
@@ -257,7 +287,7 @@ const Payment = ({ total, cartItems = [], clearCart }) => {
             </div>
           )}
           
-          {/* Payment Apps Section - WITH REAL CORRECT ICONS */}
+          {/* Payment Apps Section */}
           {total > 0 && !paymentDone && !paymentInitiated && !returnedFromApp && (
             <>
               <div className="mb-4">
@@ -270,12 +300,11 @@ const Payment = ({ total, cartItems = [], clearCart }) => {
                   </div>
                   <p className="text-sm sm:text-base font-bold text-indigo-700">{payeeName}</p>
                   <p className="text-[10px] sm:text-xs font-mono font-bold text-indigo-600 mt-0.5 break-all">{upiId}</p>
+                  <p className="text-[8px] text-green-600 mt-1">Amount to pay: ₹{total.toFixed(2)}</p>
                 </div>
                 
-                {/* REAL GPay, PhonePe, Paytm Icons - CORRECT LOGOS */}
+                {/* Payment App Buttons */}
                 <div className="grid grid-cols-3 gap-3 mt-4">
-                  
-                  {/* GOOGLE PAY - Official Logo (WORKING - DON'T CHANGE) */}
                   <button 
                     onClick={handleGPay} 
                     className="flex flex-col items-center justify-center gap-2 bg-white border-2 border-gray-200 rounded-xl py-3 hover:shadow-lg active:scale-95 transition-all duration-200"
@@ -291,13 +320,12 @@ const Payment = ({ total, cartItems = [], clearCart }) => {
                     <span className="text-[11px] font-semibold text-gray-700">Google Pay</span>
                   </button>
                   
-                  {/* PHONEPE - Official Logo (CORRECTED) */}
                   <button 
                     onClick={handlePhonePe} 
                     className="flex flex-col items-center justify-center gap-2 bg-white border-2 border-gray-200 rounded-xl py-3 hover:shadow-lg active:scale-95 transition-all duration-200"
                   >
                     <div className="w-12 h-12 flex items-center justify-center">
-                      <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
                         <rect width="48" height="48" rx="12" fill="#5F259F"/>
                         <circle cx="24" cy="19" r="7" fill="white"/>
                         <path d="M24 27C16 27 12 31 12 34H36C36 31 32 27 24 27Z" fill="white"/>
@@ -306,25 +334,24 @@ const Payment = ({ total, cartItems = [], clearCart }) => {
                     <span className="text-[11px] font-semibold text-gray-700">PhonePe</span>
                   </button>
                   
-                  {/* PAYTM - Official Logo (CORRECTED) */}
                   <button 
                     onClick={handlePaytm} 
                     className="flex flex-col items-center justify-center gap-2 bg-white border-2 border-gray-200 rounded-xl py-3 hover:shadow-lg active:scale-95 transition-all duration-200"
                   >
                     <div className="w-12 h-12 flex items-center justify-center">
-                      <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
                         <rect width="48" height="48" rx="12" fill="#00BAF2"/>
-                        <text x="24" y="32" textAnchor="middle" fill="white" fontSize="24" fontWeight="bold" fontFamily="Arial">P</text>
+                        <text x="24" y="32" textAnchor="middle" fill="white" fontSize="24" fontWeight="bold">P</text>
                       </svg>
                     </div>
                     <span className="text-[11px] font-semibold text-gray-700">Paytm</span>
                   </button>
                 </div>
                 
-                {/* Alternative payment option */}
                 <div className="mt-4 p-2 bg-gray-50 rounded-lg border border-gray-200 text-center">
                   <p className="text-[8px] text-gray-500">UPI ID for manual payment:</p>
                   <p className="font-mono text-[9px] sm:text-[10px] font-bold text-orange-600 break-all">{upiId}</p>
+                  <p className="text-[8px] text-green-600">Amount: ₹{total.toFixed(2)}</p>
                   <button 
                     onClick={copyUPILink} 
                     className="mt-1 bg-orange-500 text-white px-3 py-1 rounded text-[9px] hover:bg-orange-600 transition"
@@ -334,13 +361,11 @@ const Payment = ({ total, cartItems = [], clearCart }) => {
                 </div>
               </div>
               
-              {/* Divider */}
               <div className="relative my-4">
                 <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200"></div></div>
                 <div className="relative flex justify-center text-[9px]"><span className="px-2 bg-white text-gray-400">OR Scan QR Code</span></div>
               </div>
               
-              {/* QR Code Section */}
               <button 
                 onClick={() => setShowQR(!showQR)} 
                 className="w-full text-center text-orange-600 text-xs font-semibold py-2 flex items-center justify-center gap-2 bg-orange-50 rounded-lg hover:bg-orange-100 transition"
@@ -358,12 +383,12 @@ const Payment = ({ total, cartItems = [], clearCart }) => {
               )}
               
               <div className="mt-3 bg-blue-50 rounded-lg p-2">
-                <p className="text-blue-600 text-[9px] text-center">💡 Click any UPI app above, complete payment, then return here</p>
+                <p className="text-blue-600 text-[9px] text-center">💡 Click any UPI app, complete payment, then return here</p>
               </div>
             </>
           )}
           
-          {/* After returning from UPI app - Payment Confirmation */}
+          {/* After returning from UPI app */}
           {returnedFromApp && !paymentDone && total > 0 && (
             <div className="text-center py-4 animate-fadeInUp">
               <div className="bg-green-50 rounded-lg p-4 mb-4 border border-green-200">
@@ -410,7 +435,9 @@ const Payment = ({ total, cartItems = [], clearCart }) => {
                 <span className="text-4xl mb-2 block">✅🎉</span>
                 <p className="text-green-700 text-base font-bold">Order Placed Successfully!</p>
                 <p className="text-green-600 text-xs mt-1">Payment of ₹{total.toFixed(2)} confirmed</p>
-                <p className="text-green-600 text-[10px] mt-2">WhatsApp notification sent to shop owner</p>
+                {orderSent && (
+                  <p className="text-green-600 text-[10px] mt-1">✓ WhatsApp notification sent to shop owner</p>
+                )}
                 <p className="text-gray-500 text-[9px] mt-2">Your order will be ready in 20-30 minutes</p>
                 
                 <button 
@@ -456,17 +483,17 @@ const Payment = ({ total, cartItems = [], clearCart }) => {
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
               <div className="bg-white rounded-xl max-w-xs w-full p-4 text-center">
                 <div className="text-3xl mb-2">📞</div>
-                <h3 className="text-base font-bold text-gray-800 mb-1">Share WhatsApp Number</h3>
-                <p className="text-gray-600 text-[10px] mb-3">Get order confirmation on WhatsApp (Optional)</p>
+                <h3 className="text-base font-bold text-gray-800 mb-1">Get Order Confirmation</h3>
+                <p className="text-gray-600 text-[10px] mb-3">Share your WhatsApp number to receive order confirmation</p>
                 
                 <input
                   type="tel"
-                  placeholder="Enter WhatsApp number (91XXXXXXXXXX)"
+                  placeholder="Enter WhatsApp number"
                   value={customerNumber}
                   onChange={(e) => setCustomerNumber(e.target.value)}
                   className="w-full p-2 border border-gray-300 rounded-lg text-sm mb-3 text-center"
                 />
-                <p className="text-[8px] text-gray-400 mb-2">Example: 919876543210</p>
+                <p className="text-[8px] text-gray-400 mb-2">Enter 10 digit number (e.g., 9876543210)</p>
                 
                 <div className="flex gap-2">
                   <button onClick={handleCustomerSubmit} className="flex-1 bg-green-500 text-white py-2 rounded-lg font-semibold text-sm hover:bg-green-600">
